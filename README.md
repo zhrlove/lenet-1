@@ -1,1 +1,2 @@
 # lenet
+![]./png/lenet.png
