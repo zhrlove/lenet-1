@@ -1,2 +1,2 @@
 # lenet
-![]./png/lenet.png
+![].(/png/lenet.png)
