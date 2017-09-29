@@ -5,8 +5,6 @@ import tensorflow as tf
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
 import sys
-from cytoolz.curried import drop
-from PIL import Image
 mnist = input_data.read_data_sets("./data/", one_hot=True)
 batch_size = 125
 learning_rate = 1e-3
@@ -15,7 +13,6 @@ num_steps = 50000
 dropout = 0.7
 
 model_path = "./model/model.ckpt"
-
 
 X = tf.placeholder(tf.float32, [None, 32*32])
 Y = tf.placeholder(tf.float32, [None, 10])
