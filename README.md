@@ -1,2 +1,2 @@
 # lenet
-![](https://github.com/xiao-data/lenet/blob/master/png/lenet.png)
+![](https://raw.githubusercontent.com/xiao-data/lenet/master/png/lenet.png)
