@@ -10,7 +10,7 @@ batch_size = 125
 learning_rate = 1e-3
 display_step = 10
 num_steps = 50000
-dropout = 0.7
+dropout = 0.5
 
 model_path = "./model/model.ckpt"
 
