@@ -7,12 +7,14 @@ from tensorflow.examples.tutorials.mnist import input_data
 import sys
 mnist = input_data.read_data_sets("./data/", one_hot=True)
 batch_size = 125
-learning_rate = 1e-3
+learning_rate = 1e-4
 display_step = 10
 num_steps = 50000
 dropout = 0.5
+l2_lambda = 1e-5
 
 model_path = "./model/model.ckpt"
+
 
 X = tf.placeholder(tf.float32, [None, 32*32])
 Y = tf.placeholder(tf.float32, [None, 10])
@@ -83,8 +85,10 @@ prediction = tf.nn.softmax(logits)
 
 loss_op = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(
     logits=logits, labels=Y))
+l2_loss = tf.contrib.layers.apply_regularization(regularizer=tf.contrib.layers.l2_regularizer(l2_lambda), weights_list=tf.trainable_variables())
+final_loss = loss_op + l2_loss
 optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
-train_op = optimizer.minimize(loss_op)
+train_op = optimizer.minimize(final_loss)
 
 correct_pred = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
@@ -94,11 +98,10 @@ restore_from_model = False
 if len(sys.argv) == 2:
     restore_from_model = ('frommodel' == sys.argv[1])
     if restore_from_model:
-        num_steps = 10000
-        learning_rate = 1e-6
+        num_steps = 100
 else:
     if len(sys.argv) >2:
-        print('use: python3 lenet.py | python3 lenet.py frommodel')
+        print('usage: python3 lenet.py | python3 lenet.py frommodel')
 
 with tf.Session() as sess:
     sess.run(init)
@@ -106,25 +109,18 @@ with tf.Session() as sess:
         print('restored from model')
         saver.restore(sess, model_path)
     for step in range(1, num_steps+1):
-        if step == 10000:
-            learning_rate = 1e-4
-        if step == 20000:
-            learning_rate = 1e-5
-        if step == 40000:
-            learning_rate = 1e-6
         batch_x, batch_y = mnist.train.next_batch(batch_size)
         batch_x = ext2d(batch_x, 2)
         sess.run(train_op, feed_dict={X: batch_x, Y: batch_y, keep_prob: dropout})
         if step % display_step == 0 or step == 1:
             pre,loss, acc = sess.run([prediction,loss_op, accuracy], feed_dict={X: batch_x, Y: batch_y, keep_prob: 1.0})
-            print("Step " + str(step) + ", Minibatch Loss= " + \
-                  "{:.4f}".format(loss) + ", Training Accuracy= " + \
-                  "{:.3f}".format(acc))
+            print("Step " + str(step) + \
+                  ", Minibatch Loss= " + "{:.4f}".format(loss) + \
+                  ", Training Accuracy= " + "{:.3f}".format(acc))
 
     print("Optimization Finished!")
     XX = mnist.test.images[:1000]
     XX = ext2d(XX, 2)
     print("Testing Accuracy:", \
-        sess.run(accuracy, feed_dict={X: XX , 
-                                      Y: mnist.test.labels[:1000],keep_prob: 1.0}))
+        sess.run(accuracy, feed_dict={X: XX, Y: mnist.test.labels[:1000],keep_prob: 1.0}))
     save_path = saver.save(sess, model_path)
