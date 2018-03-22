@@ -6,7 +6,7 @@ import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets("./data/", one_hot=True)
 batch_size = 128
-learning_rate = 1e-4
+learning_rate = 1e-3
 display_step = 10
 test_step = 500
 num_steps = 50000
@@ -24,7 +24,7 @@ def conv2d(x, W, b, strides=1):
     return tf.maximum(0.1*x,x)  #leaky relu
 
 def maxpool2d(x, k=2):
-    return tf.nn.max_pool(x, ksize=[1, k, k, 1], strides=[1, k, k, 1], padding='SAME')
+    return tf.nn.max_pool(x, ksize=[1, k, k, 1], strides=[1, k, k, 1], padding='VALID')
 
 def fc(x, W, b):
     x = tf.add(tf.matmul(x, W) , b)
