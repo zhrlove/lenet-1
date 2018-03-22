@@ -4,19 +4,16 @@
 import tensorflow as tf
 import numpy as np
 from tensorflow.examples.tutorials.mnist import input_data
-import sys
 mnist = input_data.read_data_sets("./data/", one_hot=True)
-batch_size = 125
+batch_size = 128
 learning_rate = 1e-4
 display_step = 10
+test_step = 500
 num_steps = 50000
 dropout = 0.5
 l2_lambda = 1e-5
 
-model_path = "./model/model.ckpt"
-
-
-X = tf.placeholder(tf.float32, [None, 32*32])
+X = tf.placeholder(tf.float32, [None, 28*28])
 Y = tf.placeholder(tf.float32, [None, 10])
 keep_prob = tf.placeholder(tf.float32) # dropout (keep probability)
 
@@ -35,25 +32,9 @@ def fc(x, W, b):
 #     return tf.nn.relu(x)
 #     return tf.nn.tanh(x)
 
-def ext2d(arr,dim):
-    arr = np.array(arr)
-    arr = np.reshape(arr, [-1, 28, 28])
-
-    shp = arr.shape
-    tmps = []
-    i = 0
-    for a in arr:
-        i += 1
-        s1 = arr.shape[1]
-        s2 = arr.shape[2]
-        tmp = np.zeros([s1+dim*2,s2+dim*2])
-        tmp[dim:-dim,dim:-dim] = a
-        tmp = np.reshape(tmp, [32*32])
-        tmps.append(tmp)
-    return np.array(tmps)
-
 def lenet(X, weights, biases, dropout):
-    X = tf.reshape(X, [-1, 32, 32, 1])
+    X = tf.reshape(X, [-1, 28, 28, 1])
+    X = tf.pad(X, [[0,0],[2,2],[2,2], [0,0]])
     conv1 = conv2d(X, weights['conv1'], biases['conv1'])
     pool2 = maxpool2d(conv1)
     conv3 = conv2d(pool2, weights['conv3'], biases['conv3'])
@@ -93,34 +74,20 @@ train_op = optimizer.minimize(final_loss)
 correct_pred = tf.equal(tf.argmax(prediction, 1), tf.argmax(Y, 1))
 accuracy = tf.reduce_mean(tf.cast(correct_pred, tf.float32))
 init = tf.global_variables_initializer()
-saver = tf.train.Saver()
-restore_from_model = False
-if len(sys.argv) == 2:
-    restore_from_model = ('frommodel' == sys.argv[1])
-    if restore_from_model:
-        num_steps = 100
-else:
-    if len(sys.argv) >2:
-        print('usage: python3 lenet.py | python3 lenet.py frommodel')
 
 with tf.Session() as sess:
     sess.run(init)
-    if restore_from_model :
-        print('restored from model')
-        saver.restore(sess, model_path)
+    X_test = mnist.test.images[:10000]
+    Y_test = mnist.test.labels[:10000]
     for step in range(1, num_steps+1):
         batch_x, batch_y = mnist.train.next_batch(batch_size)
-        batch_x = ext2d(batch_x, 2)
         sess.run(train_op, feed_dict={X: batch_x, Y: batch_y, keep_prob: dropout})
         if step % display_step == 0 or step == 1:
             pre,loss, acc = sess.run([prediction,loss_op, accuracy], feed_dict={X: batch_x, Y: batch_y, keep_prob: 1.0})
             print("Step " + str(step) + \
                   ", Minibatch Loss= " + "{:.4f}".format(loss) + \
                   ", Training Accuracy= " + "{:.3f}".format(acc))
-
+        if step % test_step == 0 and step > 10000:
+            print("Test Step "+str(step)+": Accuracy:", \
+            sess.run(accuracy, feed_dict={X: X_test, Y: Y_test,keep_prob: 1.0}))
     print("Optimization Finished!")
-    XX = mnist.test.images[:1000]
-    XX = ext2d(XX, 2)
-    print("Testing Accuracy:", \
-        sess.run(accuracy, feed_dict={X: XX, Y: mnist.test.labels[:1000],keep_prob: 1.0}))
-    save_path = saver.save(sess, model_path)
